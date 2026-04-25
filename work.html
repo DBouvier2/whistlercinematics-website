@@ -192,14 +192,98 @@ footer{background:#0a0a0a;border-top:1px solid rgba(42,42,42,.6)}
 </div></footer>
 </div>
 <script>
-document.getElementById("menuBtn")?.addEventListener("click",function(){document.getElementById("mobileMenu").classList.toggle("open")});
+document.getElementById("menuBtn")?.addEventListener("click", function () {
+  document.getElementById("mobileMenu").classList.toggle("open");
+});
 </script>
+
 <script>
 const gallery = document.getElementById("gallery");
 const basePath = "assets/images/";
 
 let i = 1;
+let images = [];
+let currentIndex = 0;
 
+/* -----------------------
+   LIGHTBOX HTML
+------------------------*/
+const lightbox = document.createElement("div");
+lightbox.id = "lightbox";
+lightbox.style.cssText = `
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.9);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:9999;
+`;
+
+lightbox.innerHTML = `
+<span id="closeBtn" style="position:absolute;top:20px;right:30px;font-size:40px;color:white;cursor:pointer;">&times;</span>
+<span id="prevBtn" style="position:absolute;left:20px;font-size:60px;color:white;cursor:pointer;user-select:none;">&#10094;</span>
+<img id="lightboxImg" style="max-width:90%;max-height:90%;border-radius:10px;">
+<span id="nextBtn" style="position:absolute;right:20px;font-size:60px;color:white;cursor:pointer;user-select:none;">&#10095;</span>
+`;
+
+document.body.appendChild(lightbox);
+
+const lightboxImg = document.getElementById("lightboxImg");
+const closeBtn = document.getElementById("closeBtn");
+const nextBtn = document.getElementById("nextBtn");
+const prevBtn = document.getElementById("prevBtn");
+
+/* -----------------------
+   LIGHTBOX FUNCTIONS
+------------------------*/
+function openLightbox(index) {
+  currentIndex = index;
+  updateLightbox();
+  lightbox.style.display = "flex";
+}
+
+function closeLightbox() {
+  lightbox.style.display = "none";
+}
+
+function updateLightbox() {
+  lightboxImg.src = images[currentIndex].src;
+}
+
+function nextImage() {
+  currentIndex = (currentIndex + 1) % images.length;
+  updateLightbox();
+}
+
+function prevImage() {
+  currentIndex = (currentIndex - 1 + images.length) % images.length;
+  updateLightbox();
+}
+
+/* -----------------------
+   EVENTS
+------------------------*/
+nextBtn.onclick = nextImage;
+prevBtn.onclick = prevImage;
+closeBtn.onclick = closeLightbox;
+
+lightbox.addEventListener("click", (e) => {
+  if (e.target === lightbox) closeLightbox();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (lightbox.style.display === "flex") {
+    if (e.key === "ArrowRight") nextImage();
+    if (e.key === "ArrowLeft") prevImage();
+    if (e.key === "Escape") closeLightbox();
+  }
+});
+
+/* -----------------------
+   IMAGE LOADER
+------------------------*/
 function loadNextImage() {
   const img = new Image();
   img.src = `${basePath}image-${i}.JPG`;
@@ -211,15 +295,23 @@ function loadNextImage() {
     img.className = "img-zoom";
     img.loading = "lazy";
 
+    const index = images.length;
+
+    img.addEventListener("click", () => {
+      openLightbox(index);
+    });
+
     wrapper.appendChild(img);
     gallery.appendChild(wrapper);
+
+    images.push(img);
 
     i++;
     loadNextImage();
   };
 
   img.onerror = () => {
-    console.log("Stopped at image-" + i);
+    console.log("Loaded " + images.length + " images total.");
   };
 }
 
